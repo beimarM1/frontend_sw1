@@ -131,11 +131,11 @@ import { WorkflowNode, WorkflowLane, FormField, WorkflowEdge } from '../../servi
                       <option value="textarea">Área texto</option>
                       <option value="file">Archivo</option>
                       <option value="grid">Grilla / Tabla</option>
-                      <option value="label">🏷️ Etiqueta / Separador</option>
-                      <option value="editor">📝 Editor de Texto Enriquecido</option>
-                      <option value="checklist">☑️ Checklist (múltiple)</option>
-                      <option value="rating">⭐ Selector Visual (Estrellas)</option>
-                      <option value="color">🎨 Selector de Color</option>
+                      <option value="label">Etiqueta / Separador</option>
+                      <option value="editor">Editor de Texto Enriquecido</option>
+                      <option value="checklist">Checklist (múltiple)</option>
+                      <option value="rating">Selector Visual (Estrellas)</option>
+                      <option value="color">Selector de Color</option>
                     </select>
                   </div>
                   <div class="flex items-end pb-1.5">
@@ -157,10 +157,10 @@ import { WorkflowNode, WorkflowLane, FormField, WorkflowEdge } from '../../servi
                     <select [(ngModel)]="field.permission"
                             (ngModelChange)="emitUpdate()"
                             class="w-full border border-indigo-200 rounded-md px-2 py-1.5 text-xs text-indigo-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer">
-                      <option value="NONE">🚫  Oculto (NONE) — Ni visible</option>
-                      <option value="READ">👁️  Solo Lectura (READ) — Sin editar</option>
-                      <option value="UPLOAD">☁️  Solo Subida (UPLOAD) — Carga inicial</option>
-                      <option value="WRITE">✏️  Edición Colaborativa (WRITE) — Yjs + Quill</option>
+                      <option value="NONE">Oculto (NONE) — Ni visible</option>
+                      <option value="READ">Solo Lectura (READ) — Sin editar</option>
+                      <option value="UPLOAD">Solo Subida (UPLOAD) — Carga inicial</option>
+                      <option value="WRITE">Edición Colaborativa (WRITE) — Yjs + Quill</option>
                     </select>
                     <p class="text-[9px] text-indigo-400 mt-1.5 italic">Define qué puede hacer cada funcionario con este archivo en este paso del flujo.</p>
                   </div>
