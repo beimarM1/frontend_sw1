@@ -6,6 +6,9 @@ import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { DocumentManagerComponent } from '../document-manager/document-manager.component';
 import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importación
+
+import { environment } from '../../environments/environment'; // Ajusta la ruta relativa
+
 @Component({
   selector: 'app-worklist',
   standalone: true,
@@ -140,7 +143,7 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
           class="relative rounded-2xl border border-white/10 overflow-hidden transition-all duration-300"
           [ngClass]="{
             'w-full max-w-lg mx-4 bg-[#1e1e2e]': !hasDocsPane,
-            'w-[95vw] h-[90vh] max-w-7xl mx-4 flex bg-[#1e1e2e]': hasDocsPane
+            'w-[95vw] h-[90vh] max-w-7xl mx-4 flex bg-[#1e1e2e]': hasDocsPane,
           }"
           (click)="$event.stopPropagation()"
         >
@@ -154,7 +157,10 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                   <div>
                     <h2 class="text-xl font-bold">Completar Tarea</h2>
                     <p class="text-white/50 text-sm mt-1">
-                      Paso: <span class="text-indigo-400 font-semibold">{{ selectedItem.currentStepId }}</span>
+                      Paso:
+                      <span class="text-indigo-400 font-semibold">{{
+                        selectedItem.currentStepId
+                      }}</span>
                     </p>
                   </div>
                 </div>
@@ -165,289 +171,16 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                 @if (loadingForm) {
                   <div class="text-center py-8 text-white/40">⏳ Cargando formulario...</div>
                 } @else if (formFields.length > 0) {
-                  <p class="text-sm text-white/50 mb-4">Completa los campos para avanzar el proceso:</p>
+                  <p class="text-sm text-white/50 mb-4">
+                    Completa los campos para avanzar el proceso:
+                  </p>
                   <div class="space-y-4">
                     @for (field of formFields; track field.id) {
                       @if (field.permission !== 'NONE') {
                         <div>
-                           <label class="block text-xs font-semibold text-white/60 mb-1.5 uppercase tracking-wider">
-                             {{ field.label }}
-                             @if (field.required) {
-                               <span class="text-red-400">*</span>
-                             }
-                           </label>
-                           @switch (field.type) {
-                             @case ('textarea') {
-                               <textarea
-                                 [(ngModel)]="formData[field.id]"
-                                 [placeholder]="field.placeholder || ''"
-                                 rows="3"
-                                 class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 resize-none bg-white/5 text-white"
-                               ></textarea>
-                             }
-                             @case ('select') {
-                               <select
-                                 [(ngModel)]="formData[field.id]"
-                                 class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 bg-[#1e1e2e] text-white"
-                               >
-                                 <option value="">-- Selecciona --</option>
-                                 @for (opt of field.options || []; track opt) {
-                                   <option [value]="opt">{{ opt }}</option>
-                                 }
-                               </select>
-                             }
-                             @case ('checkbox') {
-                               <label class="flex items-center gap-3 cursor-pointer">
-                                 <input
-                                   type="checkbox"
-                                   [(ngModel)]="formData[field.id]"
-                                   class="w-4 h-4 rounded"
-                                 />
-                                 <span class="text-sm text-white/70">{{ field.placeholder || 'Marcar si aplica' }}</span>
-                               </label>
-                             }
-                             @case ('grid') {
-                               <div class="border border-white/10 rounded-lg overflow-hidden bg-white/5">
-                                 <div class="overflow-x-auto">
-                                   <table class="w-full text-left text-sm text-white/70">
-                                     <thead class="bg-white/10 text-xs uppercase">
-                                       <tr>
-                                         @for (col of field.gridColumns; track col.id) {
-                                           <th class="px-3 py-2">{{ col.label }}</th>
-                                         }
-                                         <th class="px-3 py-2 text-right">
-                                           <button
-                                             (click)="addRow(field.id, field.gridColumns)"
-                                             class="text-[10px] bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded transition-all"
-                                           >
-                                             + Fila
-                                           </button>
-                                         </th>
-                                       </tr>
-                                     </thead>
-                                     <tbody>
-                                       @if (!formData[field.id] || formData[field.id].length === 0) {
-                                         <tr>
-                                           <td
-                                             [attr.colspan]="(field.gridColumns?.length || 0) + 1"
-                                             class="px-3 py-4 text-center text-white/40 italic"
-                                           >
-                                             No hay registros en la grilla.
-                                           </td>
-                                         </tr>
-                                       }
-                                       @for (row of formData[field.id]; track $index; let rIdx = $index) {
-                                         <tr class="border-t border-white/5 hover:bg-white/5">
-                                           @for (col of field.gridColumns; track col.id) {
-                                             <td class="px-2 py-2">
-                                               <input
-                                                 [type]="col.type || 'text'"
-                                                 [(ngModel)]="row[col.id]"
-                                                 class="w-full rounded bg-transparent border border-white/10 px-2 py-1 text-xs outline-none focus:border-indigo-500 text-white placeholder-white/30"
-                                               />
-                                             </td>
-                                           }
-                                           <td class="px-2 py-2 text-right">
-                                             <button
-                                               (click)="removeRow(field.id, rIdx)"
-                                               class="text-red-400 hover:text-red-300 text-lg leading-none"
-                                             >
-                                               &times;
-                                             </button>
-                                           </td>
-                                         </tr>
-                                       }
-                                     </tbody>
-                                   </table>
-                                 </div>
-                               </div>
-                             }
-                             @case ('file') {
-                               @if (field.permission === 'UPLOAD') {
-                                 <div class="relative">
-                                   <input
-                                     type="file"
-                                     [id]="'file-' + field.id"
-                                     (change)="onFileChange(field.id, $event)"
-                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                   />
-                                   <div class="w-full rounded-lg px-3 py-2.5 text-sm border border-white/10 flex items-center gap-3 cursor-pointer hover:border-indigo-500 transition-all bg-white/5 text-white">
-                                     <span style="color:#818cf8">📎</span>
-                                     <span class="text-white/50 text-xs">{{ formData[field.id] || 'Haz clic para seleccionar archivo...' }}</span>
-                                   </div>
-                                 </div>
-                               } @else if (field.permission === 'READ') {
-                                 <div class="text-xs text-indigo-400 bg-indigo-500/5 p-3 rounded-lg border border-indigo-500/20 flex items-center gap-2">
-                                   <span>👁️</span> Disponible para lectura en el Gestor Documental (derecha)
-                                 </div>
-                               } @else if (field.permission === 'WRITE') {
-                                 <div class="text-xs text-amber-400 bg-amber-500/5 p-3 rounded-lg border border-amber-500/20 flex items-center gap-2">
-                                   <span>📝</span> Disponible para co-edición en el Gestor Documental (derecha)
-                                 </div>
-                               }
-                             }
-                             @case ('label') {
-                               <div class="py-2 px-3 rounded-lg border-l-4 border-indigo-500/60 bg-white/5">
-                                 <p class="text-xs font-bold text-indigo-300 uppercase tracking-widest">{{ field.placeholder || field.label }}</p>
-                               </div>
-                             }
-                             @case ('editor') {
-                               <div class="rounded-lg border border-white/10 overflow-hidden bg-white/5">
-                                 <div class="flex gap-1 px-2 py-1.5 bg-white/5 border-b border-white/10">
-                                   <button type="button" (click)="execCmd('bold')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white/70 hover:bg-white/10 transition-all" title="Negrita"><b>B</b></button>
-                                   <button type="button" (click)="execCmd('italic')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] italic text-white/70 hover:bg-white/10 transition-all" title="Cursiva"><i>I</i></button>
-                                   <button type="button" (click)="execCmd('underline')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] underline text-white/70 hover:bg-white/10 transition-all" title="Subrayado">U</button>
-                                   <div class="w-px h-4 bg-white/10 mx-0.5 self-center"></div>
-                                   <button type="button" (click)="execCmd('insertUnorderedList')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all" title="Lista">☰</button>
-                                   <button type="button" (click)="execCmd('insertOrderedList')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all" title="Num.">1.</button>
-                                 </div>
-                                 <div [id]="'editor-' + field.id" contenteditable="true"
-                                   (input)="onEditorInput(field.id, $event)"
-                                   [innerHTML]="formData[field.id] || ''"
-                                   class="min-h-[100px] p-3 text-sm text-white/90 outline-none" style="line-height:1.6"></div>
-                               </div>
-                             }
-                             @case ('checklist') {
-                               <div class="space-y-2">
-                                 @for (item of field.checklistItems || []; track item.id) {
-                                   <label class="flex items-center gap-3 p-2.5 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all">
-                                     <div class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
-                                       [style.border-color]="isChecklistItemChecked(field.id, item.id) ? '#6366f1' : 'rgba(255,255,255,0.2)'"
-                                       [style.background]="isChecklistItemChecked(field.id, item.id) ? '#6366f1' : 'transparent'"
-                                       (click)="toggleChecklistItem(field.id, item.id)">
-                                       @if (isChecklistItemChecked(field.id, item.id)) {
-                                         <span class="text-white text-[10px] font-bold">✓</span>
-                                       }
-                                     </div>
-                                     <span class="text-sm text-white/80" [class.line-through]="isChecklistItemChecked(field.id, item.id)">{{ item.label }}</span>
-                                   </label>
-                                 }
-                               </div>
-                             }
-                             @case ('rating') {
-                               <div class="flex gap-1.5 items-center">
-                                 @for (star of getRatingArray(field.maxRating || 5); track star) {
-                                   <button type="button"
-                                     (click)="setRating(field.id, star)"
-                                     (mouseenter)="hoverRating[field.id] = star"
-                                     (mouseleave)="hoverRating[field.id] = 0"
-                                     class="text-2xl transition-all hover:scale-110 focus:outline-none"
-                                     [style.color]="(hoverRating[field.id] || formData[field.id] || 0) >= star ? '#fbbf24' : 'rgba(255,255,255,0.15)'">
-                                     ★
-                                   </button>
-                                 }
-                                 @if (formData[field.id]) {
-                                   <span class="text-xs text-white/40 ml-2">{{ formData[field.id] }}/{{ field.maxRating || 5 }}</span>
-                                 }
-                               </div>
-                             }
-                             @case ('color') {
-                               <div class="flex items-center gap-3">
-                                 <div class="flex flex-wrap gap-2">
-                                   @for (c of presetColors; track c) {
-                                     <button type="button" (click)="formData[field.id] = c"
-                                       class="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
-                                       [style.background]="c"
-                                       [class.border-white]="formData[field.id] === c"
-                                       [class.border-transparent]="formData[field.id] !== c">
-                                     </button>
-                                   }
-                                 </div>
-                                 <label class="relative cursor-pointer" title="Color personalizado">
-                                   <input type="color" [(ngModel)]="formData[field.id]"
-                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                   <div class="w-8 h-8 rounded-full border-2 border-dashed border-white/30 flex items-center justify-center text-white/50 text-xs"
-                                     [style.background]="formData[field.id] || 'transparent'">+</div>
-                                 </label>
-                                 @if (formData[field.id]) {
-                                   <span class="text-xs font-mono text-white/50">{{ formData[field.id] }}</span>
-                                 }
-                               </div>
-                             }
-                             @default {
-                               <input
-                                 [type]="field.type || 'text'"
-                                 [(ngModel)]="formData[field.id]"
-                                 [placeholder]="field.placeholder || ''"
-                                 class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 bg-white/5 text-white"
-                               />
-                             }
-                           }
-                        </div>
-                      }
-                    }
-                  </div>
-                }
-                @if (errorMsg) {
-                  <div class="mt-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
-                    ⚠️ {{ errorMsg }}
-                  </div>
-                }
-              </div>
-
-              <!-- Footer del Formulario -->
-              <div class="p-6 border-t border-white/10 flex gap-3 justify-end bg-white/5">
-                <button
-                  (click)="cerrarModal()"
-                  class="px-5 py-2.5 rounded-lg text-sm border border-white/10 hover:bg-white/10 transition-all"
-                >
-                  Cancelar
-                 </button>
-                 <button
-                   (click)="completarTarea()"
-                   [disabled]="completing"
-                   class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
-                   style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white"
-                 >
-                   {{ completing ? '⏳ Procesando...' : '✅ Confirmar y Avanzar' }}
-                 </button>
-              </div>
-            </div>
-
-            <!-- Columna Derecha: Gestor Documental (60%) -->
-            <div class="w-[60%] flex flex-col h-full bg-[#0f172a] relative">
-              <button
-                (click)="cerrarModal()"
-                class="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
-              >
-                ✕
-              </button>
-              <div class="flex-1 overflow-hidden">
-                <app-document-manager
-                  [tramite]="selectedItem"
-                  [nodeFieldPermissions]="nodeFieldPermissions"
-                  [nodeFieldLabels]="nodeFieldLabels"
-                  (onFileUploaded)="handleFileUploaded($event)"
-                ></app-document-manager>
-              </div>
-            </div>
-          } @else {
-            <!-- Modal Compacto Tradicional (Sin Gestor Documental) -->
-            <div class="flex flex-col h-full w-full">
-              <div class="p-6 border-b border-white/10" style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1))">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <h2 class="text-xl font-bold">Completar Tarea</h2>
-                    <p class="text-white/50 text-sm mt-1">
-                      Paso: <span class="text-indigo-400 font-semibold">{{ selectedItem.currentStepId }}</span>
-                    </p>
-                  </div>
-                  <button (click)="cerrarModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div class="p-6">
-                @if (loadingForm) {
-                  <div class="text-center py-8 text-white/40">⏳ Cargando formulario...</div>
-                } @else if (formFields.length > 0) {
-                  <p class="text-sm text-white/50 mb-4">Completa los campos para avanzar el proceso:</p>
-                  <div class="space-y-4">
-                    @for (field of formFields; track field.id) {
-                      @if (field.permission !== 'NONE') {
-                        <div>
-                          <label class="block text-xs font-semibold text-white/60 mb-1.5 uppercase tracking-wider">
+                          <label
+                            class="block text-xs font-semibold text-white/60 mb-1.5 uppercase tracking-wider"
+                          >
                             {{ field.label }}
                             @if (field.required) {
                               <span class="text-red-400">*</span>
@@ -480,11 +213,15 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                                   [(ngModel)]="formData[field.id]"
                                   class="w-4 h-4 rounded"
                                 />
-                                <span class="text-sm text-white/70">{{ field.placeholder || 'Marcar si aplica' }}</span>
+                                <span class="text-sm text-white/70">{{
+                                  field.placeholder || 'Marcar si aplica'
+                                }}</span>
                               </label>
                             }
                             @case ('grid') {
-                              <div class="border border-white/10 rounded-lg overflow-hidden bg-white/5">
+                              <div
+                                class="border border-white/10 rounded-lg overflow-hidden bg-white/5"
+                              >
                                 <div class="overflow-x-auto">
                                   <table class="w-full text-left text-sm text-white/70">
                                     <thead class="bg-white/10 text-xs uppercase">
@@ -513,7 +250,407 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                                           </td>
                                         </tr>
                                       }
-                                      @for (row of formData[field.id]; track $index; let rIdx = $index) {
+                                      @for (
+                                        row of formData[field.id];
+                                        track $index;
+                                        let rIdx = $index
+                                      ) {
+                                        <tr class="border-t border-white/5 hover:bg-white/5">
+                                          @for (col of field.gridColumns; track col.id) {
+                                            <td class="px-2 py-2">
+                                              <input
+                                                [type]="col.type || 'text'"
+                                                [(ngModel)]="row[col.id]"
+                                                class="w-full rounded bg-transparent border border-white/10 px-2 py-1 text-xs outline-none focus:border-indigo-500 text-white placeholder-white/30"
+                                              />
+                                            </td>
+                                          }
+                                          <td class="px-2 py-2 text-right">
+                                            <button
+                                              (click)="removeRow(field.id, rIdx)"
+                                              class="text-red-400 hover:text-red-300 text-lg leading-none"
+                                            >
+                                              &times;
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      }
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            }
+                            @case ('file') {
+                              @if (field.permission === 'UPLOAD') {
+                                <div class="relative">
+                                  <input
+                                    type="file"
+                                    [id]="'file-' + field.id"
+                                    (change)="onFileChange(field.id, $event)"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                  />
+                                  <div
+                                    class="w-full rounded-lg px-3 py-2.5 text-sm border border-white/10 flex items-center gap-3 cursor-pointer hover:border-indigo-500 transition-all bg-white/5 text-white"
+                                  >
+                                    <span style="color:#818cf8">📎</span>
+                                    <span class="text-white/50 text-xs">{{
+                                      formData[field.id] || 'Haz clic para seleccionar archivo...'
+                                    }}</span>
+                                  </div>
+                                </div>
+                              } @else if (field.permission === 'READ') {
+                                <div
+                                  class="text-xs text-indigo-400 bg-indigo-500/5 p-3 rounded-lg border border-indigo-500/20 flex items-center gap-2"
+                                >
+                                  <span>👁️</span> Disponible para lectura en el Gestor Documental
+                                  (derecha)
+                                </div>
+                              } @else if (field.permission === 'WRITE') {
+                                <div
+                                  class="text-xs text-amber-400 bg-amber-500/5 p-3 rounded-lg border border-amber-500/20 flex items-center gap-2"
+                                >
+                                  <span>📝</span> Disponible para co-edición en el Gestor Documental
+                                  (derecha)
+                                </div>
+                              }
+                            }
+                            @case ('label') {
+                              <div
+                                class="py-2 px-3 rounded-lg border-l-4 border-indigo-500/60 bg-white/5"
+                              >
+                                <p
+                                  class="text-xs font-bold text-indigo-300 uppercase tracking-widest"
+                                >
+                                  {{ field.placeholder || field.label }}
+                                </p>
+                              </div>
+                            }
+                            @case ('editor') {
+                              <div
+                                class="rounded-lg border border-white/10 overflow-hidden bg-white/5"
+                              >
+                                <div
+                                  class="flex gap-1 px-2 py-1.5 bg-white/5 border-b border-white/10"
+                                >
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('bold')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white/70 hover:bg-white/10 transition-all"
+                                    title="Negrita"
+                                  >
+                                    <b>B</b>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('italic')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] italic text-white/70 hover:bg-white/10 transition-all"
+                                    title="Cursiva"
+                                  >
+                                    <i>I</i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('underline')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] underline text-white/70 hover:bg-white/10 transition-all"
+                                    title="Subrayado"
+                                  >
+                                    U
+                                  </button>
+                                  <div class="w-px h-4 bg-white/10 mx-0.5 self-center"></div>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('insertUnorderedList')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all"
+                                    title="Lista"
+                                  >
+                                    ☰
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('insertOrderedList')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all"
+                                    title="Num."
+                                  >
+                                    1.
+                                  </button>
+                                </div>
+                                <div
+                                  [id]="'editor-' + field.id"
+                                  contenteditable="true"
+                                  (input)="onEditorInput(field.id, $event)"
+                                  [innerHTML]="formData[field.id] || ''"
+                                  class="min-h-[100px] p-3 text-sm text-white/90 outline-none"
+                                  style="line-height:1.6"
+                                ></div>
+                              </div>
+                            }
+                            @case ('checklist') {
+                              <div class="space-y-2">
+                                @for (item of field.checklistItems || []; track item.id) {
+                                  <label
+                                    class="flex items-center gap-3 p-2.5 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all"
+                                  >
+                                    <div
+                                      class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
+                                      [style.border-color]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                          ? '#6366f1'
+                                          : 'rgba(255,255,255,0.2)'
+                                      "
+                                      [style.background]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                          ? '#6366f1'
+                                          : 'transparent'
+                                      "
+                                      (click)="toggleChecklistItem(field.id, item.id)"
+                                    >
+                                      @if (isChecklistItemChecked(field.id, item.id)) {
+                                        <span class="text-white text-[10px] font-bold">✓</span>
+                                      }
+                                    </div>
+                                    <span
+                                      class="text-sm text-white/80"
+                                      [class.line-through]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                      "
+                                      >{{ item.label }}</span
+                                    >
+                                  </label>
+                                }
+                              </div>
+                            }
+                            @case ('rating') {
+                              <div class="flex gap-1.5 items-center">
+                                @for (star of getRatingArray(field.maxRating || 5); track star) {
+                                  <button
+                                    type="button"
+                                    (click)="setRating(field.id, star)"
+                                    (mouseenter)="hoverRating[field.id] = star"
+                                    (mouseleave)="hoverRating[field.id] = 0"
+                                    class="text-2xl transition-all hover:scale-110 focus:outline-none"
+                                    [style.color]="
+                                      (hoverRating[field.id] || formData[field.id] || 0) >= star
+                                        ? '#fbbf24'
+                                        : 'rgba(255,255,255,0.15)'
+                                    "
+                                  >
+                                    ★
+                                  </button>
+                                }
+                                @if (formData[field.id]) {
+                                  <span class="text-xs text-white/40 ml-2"
+                                    >{{ formData[field.id] }}/{{ field.maxRating || 5 }}</span
+                                  >
+                                }
+                              </div>
+                            }
+                            @case ('color') {
+                              <div class="flex items-center gap-3">
+                                <div class="flex flex-wrap gap-2">
+                                  @for (c of presetColors; track c) {
+                                    <button
+                                      type="button"
+                                      (click)="formData[field.id] = c"
+                                      class="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
+                                      [style.background]="c"
+                                      [class.border-white]="formData[field.id] === c"
+                                      [class.border-transparent]="formData[field.id] !== c"
+                                    ></button>
+                                  }
+                                </div>
+                                <label class="relative cursor-pointer" title="Color personalizado">
+                                  <input
+                                    type="color"
+                                    [(ngModel)]="formData[field.id]"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <div
+                                    class="w-8 h-8 rounded-full border-2 border-dashed border-white/30 flex items-center justify-center text-white/50 text-xs"
+                                    [style.background]="formData[field.id] || 'transparent'"
+                                  >
+                                    +
+                                  </div>
+                                </label>
+                                @if (formData[field.id]) {
+                                  <span class="text-xs font-mono text-white/50">{{
+                                    formData[field.id]
+                                  }}</span>
+                                }
+                              </div>
+                            }
+                            @default {
+                              <input
+                                [type]="field.type || 'text'"
+                                [(ngModel)]="formData[field.id]"
+                                [placeholder]="field.placeholder || ''"
+                                class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 bg-white/5 text-white"
+                              />
+                            }
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+                @if (errorMsg) {
+                  <div
+                    class="mt-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm"
+                  >
+                    ⚠️ {{ errorMsg }}
+                  </div>
+                }
+              </div>
+
+              <!-- Footer del Formulario -->
+              <div class="p-6 border-t border-white/10 flex gap-3 justify-end bg-white/5">
+                <button
+                  (click)="cerrarModal()"
+                  class="px-5 py-2.5 rounded-lg text-sm border border-white/10 hover:bg-white/10 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  (click)="completarTarea()"
+                  [disabled]="completing"
+                  class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
+                  style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white"
+                >
+                  {{ completing ? '⏳ Procesando...' : '✅ Confirmar y Avanzar' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Gestor Documental (60%) -->
+            <div class="w-[60%] flex flex-col h-full bg-[#0f172a] relative">
+              <button
+                (click)="cerrarModal()"
+                class="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
+              >
+                ✕
+              </button>
+              <div class="flex-1 overflow-hidden">
+                <app-document-manager
+                  [tramite]="selectedItem"
+                  [nodeFieldPermissions]="nodeFieldPermissions"
+                  [nodeFieldLabels]="nodeFieldLabels"
+                  (onFileUploaded)="handleFileUploaded($event)"
+                ></app-document-manager>
+              </div>
+            </div>
+          } @else {
+            <!-- Modal Compacto Tradicional (Sin Gestor Documental) -->
+            <div class="flex flex-col h-full w-full">
+              <div
+                class="p-6 border-b border-white/10"
+                style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1))"
+              >
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h2 class="text-xl font-bold">Completar Tarea</h2>
+                    <p class="text-white/50 text-sm mt-1">
+                      Paso:
+                      <span class="text-indigo-400 font-semibold">{{
+                        selectedItem.currentStepId
+                      }}</span>
+                    </p>
+                  </div>
+                  <button
+                    (click)="cerrarModal()"
+                    class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-6">
+                @if (loadingForm) {
+                  <div class="text-center py-8 text-white/40">⏳ Cargando formulario...</div>
+                } @else if (formFields.length > 0) {
+                  <p class="text-sm text-white/50 mb-4">
+                    Completa los campos para avanzar el proceso:
+                  </p>
+                  <div class="space-y-4">
+                    @for (field of formFields; track field.id) {
+                      @if (field.permission !== 'NONE') {
+                        <div>
+                          <label
+                            class="block text-xs font-semibold text-white/60 mb-1.5 uppercase tracking-wider"
+                          >
+                            {{ field.label }}
+                            @if (field.required) {
+                              <span class="text-red-400">*</span>
+                            }
+                          </label>
+                          @switch (field.type) {
+                            @case ('textarea') {
+                              <textarea
+                                [(ngModel)]="formData[field.id]"
+                                [placeholder]="field.placeholder || ''"
+                                rows="3"
+                                class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 resize-none bg-white/5 text-white"
+                              ></textarea>
+                            }
+                            @case ('select') {
+                              <select
+                                [(ngModel)]="formData[field.id]"
+                                class="w-full rounded-lg px-3 py-2 text-sm border border-white/10 outline-none focus:border-indigo-500 bg-[#1e1e2e] text-white"
+                              >
+                                <option value="">-- Selecciona --</option>
+                                @for (opt of field.options || []; track opt) {
+                                  <option [value]="opt">{{ opt }}</option>
+                                }
+                              </select>
+                            }
+                            @case ('checkbox') {
+                              <label class="flex items-center gap-3 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  [(ngModel)]="formData[field.id]"
+                                  class="w-4 h-4 rounded"
+                                />
+                                <span class="text-sm text-white/70">{{
+                                  field.placeholder || 'Marcar si aplica'
+                                }}</span>
+                              </label>
+                            }
+                            @case ('grid') {
+                              <div
+                                class="border border-white/10 rounded-lg overflow-hidden bg-white/5"
+                              >
+                                <div class="overflow-x-auto">
+                                  <table class="w-full text-left text-sm text-white/70">
+                                    <thead class="bg-white/10 text-xs uppercase">
+                                      <tr>
+                                        @for (col of field.gridColumns; track col.id) {
+                                          <th class="px-3 py-2">{{ col.label }}</th>
+                                        }
+                                        <th class="px-3 py-2 text-right">
+                                          <button
+                                            (click)="addRow(field.id, field.gridColumns)"
+                                            class="text-[10px] bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded transition-all"
+                                          >
+                                            + Fila
+                                          </button>
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      @if (!formData[field.id] || formData[field.id].length === 0) {
+                                        <tr>
+                                          <td
+                                            [attr.colspan]="(field.gridColumns?.length || 0) + 1"
+                                            class="px-3 py-4 text-center text-white/40 italic"
+                                          >
+                                            No hay registros en la grilla.
+                                          </td>
+                                        </tr>
+                                      }
+                                      @for (
+                                        row of formData[field.id];
+                                        track $index;
+                                        let rIdx = $index
+                                      ) {
                                         <tr class="border-t border-white/5 hover:bg-white/5">
                                           @for (col of field.gridColumns; track col.id) {
                                             <td class="px-2 py-2">
@@ -547,46 +684,117 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                                   (change)="onFileChange(field.id, $event)"
                                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />
-                                <div class="w-full rounded-lg px-3 py-2.5 text-sm border border-white/10 flex items-center gap-3 cursor-pointer hover:border-indigo-500 transition-all bg-white/5 text-white">
+                                <div
+                                  class="w-full rounded-lg px-3 py-2.5 text-sm border border-white/10 flex items-center gap-3 cursor-pointer hover:border-indigo-500 transition-all bg-white/5 text-white"
+                                >
                                   <span style="color:#818cf8">📎</span>
-                                  <span class="text-white/50 text-xs">{{ formData[field.id] || 'Haz clic para seleccionar archivo...' }}</span>
+                                  <span class="text-white/50 text-xs">{{
+                                    formData[field.id] || 'Haz clic para seleccionar archivo...'
+                                  }}</span>
                                 </div>
                               </div>
                             }
                             @case ('label') {
-                              <div class="py-2 px-3 rounded-lg border-l-4 border-indigo-500/60 bg-white/5">
-                                <p class="text-xs font-bold text-indigo-300 uppercase tracking-widest">{{ field.placeholder || field.label }}</p>
+                              <div
+                                class="py-2 px-3 rounded-lg border-l-4 border-indigo-500/60 bg-white/5"
+                              >
+                                <p
+                                  class="text-xs font-bold text-indigo-300 uppercase tracking-widest"
+                                >
+                                  {{ field.placeholder || field.label }}
+                                </p>
                               </div>
                             }
                             @case ('editor') {
-                              <div class="rounded-lg border border-white/10 overflow-hidden bg-white/5">
-                                <div class="flex gap-1 px-2 py-1.5 bg-white/5 border-b border-white/10">
-                                  <button type="button" (click)="execCmd('bold')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white/70 hover:bg-white/10 transition-all" title="Negrita"><b>B</b></button>
-                                  <button type="button" (click)="execCmd('italic')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] italic text-white/70 hover:bg-white/10 transition-all" title="Cursiva"><i>I</i></button>
-                                  <button type="button" (click)="execCmd('underline')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] underline text-white/70 hover:bg-white/10 transition-all" title="Subrayado">U</button>
+                              <div
+                                class="rounded-lg border border-white/10 overflow-hidden bg-white/5"
+                              >
+                                <div
+                                  class="flex gap-1 px-2 py-1.5 bg-white/5 border-b border-white/10"
+                                >
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('bold')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white/70 hover:bg-white/10 transition-all"
+                                    title="Negrita"
+                                  >
+                                    <b>B</b>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('italic')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] italic text-white/70 hover:bg-white/10 transition-all"
+                                    title="Cursiva"
+                                  >
+                                    <i>I</i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('underline')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] underline text-white/70 hover:bg-white/10 transition-all"
+                                    title="Subrayado"
+                                  >
+                                    U
+                                  </button>
                                   <div class="w-px h-4 bg-white/10 mx-0.5 self-center"></div>
-                                  <button type="button" (click)="execCmd('insertUnorderedList')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all" title="Lista">☰</button>
-                                  <button type="button" (click)="execCmd('insertOrderedList')" class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all" title="Num.">1.</button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('insertUnorderedList')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all"
+                                    title="Lista"
+                                  >
+                                    ☰
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="execCmd('insertOrderedList')"
+                                    class="w-6 h-6 rounded flex items-center justify-center text-[11px] text-white/70 hover:bg-white/10 transition-all"
+                                    title="Num."
+                                  >
+                                    1.
+                                  </button>
                                 </div>
-                                <div [id]="'editor-' + field.id" contenteditable="true"
+                                <div
+                                  [id]="'editor-' + field.id"
+                                  contenteditable="true"
                                   (input)="onEditorInput(field.id, $event)"
                                   [innerHTML]="formData[field.id] || ''"
-                                  class="min-h-[100px] p-3 text-sm text-white/90 outline-none" style="line-height:1.6"></div>
+                                  class="min-h-[100px] p-3 text-sm text-white/90 outline-none"
+                                  style="line-height:1.6"
+                                ></div>
                               </div>
                             }
                             @case ('checklist') {
                               <div class="space-y-2">
                                 @for (item of field.checklistItems || []; track item.id) {
-                                  <label class="flex items-center gap-3 p-2.5 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all">
-                                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
-                                      [style.border-color]="isChecklistItemChecked(field.id, item.id) ? '#6366f1' : 'rgba(255,255,255,0.2)'"
-                                      [style.background]="isChecklistItemChecked(field.id, item.id) ? '#6366f1' : 'transparent'"
-                                      (click)="toggleChecklistItem(field.id, item.id)">
+                                  <label
+                                    class="flex items-center gap-3 p-2.5 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all"
+                                  >
+                                    <div
+                                      class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
+                                      [style.border-color]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                          ? '#6366f1'
+                                          : 'rgba(255,255,255,0.2)'
+                                      "
+                                      [style.background]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                          ? '#6366f1'
+                                          : 'transparent'
+                                      "
+                                      (click)="toggleChecklistItem(field.id, item.id)"
+                                    >
                                       @if (isChecklistItemChecked(field.id, item.id)) {
                                         <span class="text-white text-[10px] font-bold">✓</span>
                                       }
                                     </div>
-                                    <span class="text-sm text-white/80" [class.line-through]="isChecklistItemChecked(field.id, item.id)">{{ item.label }}</span>
+                                    <span
+                                      class="text-sm text-white/80"
+                                      [class.line-through]="
+                                        isChecklistItemChecked(field.id, item.id)
+                                      "
+                                      >{{ item.label }}</span
+                                    >
                                   </label>
                                 }
                               </div>
@@ -594,17 +802,25 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                             @case ('rating') {
                               <div class="flex gap-1.5 items-center">
                                 @for (star of getRatingArray(field.maxRating || 5); track star) {
-                                  <button type="button"
+                                  <button
+                                    type="button"
                                     (click)="setRating(field.id, star)"
                                     (mouseenter)="hoverRating[field.id] = star"
                                     (mouseleave)="hoverRating[field.id] = 0"
                                     class="text-2xl transition-all hover:scale-110 focus:outline-none"
-                                    [style.color]="(hoverRating[field.id] || formData[field.id] || 0) >= star ? '#fbbf24' : 'rgba(255,255,255,0.15)'">
+                                    [style.color]="
+                                      (hoverRating[field.id] || formData[field.id] || 0) >= star
+                                        ? '#fbbf24'
+                                        : 'rgba(255,255,255,0.15)'
+                                    "
+                                  >
                                     ★
                                   </button>
                                 }
                                 @if (formData[field.id]) {
-                                  <span class="text-xs text-white/40 ml-2">{{ formData[field.id] }}/{{ field.maxRating || 5 }}</span>
+                                  <span class="text-xs text-white/40 ml-2"
+                                    >{{ formData[field.id] }}/{{ field.maxRating || 5 }}</span
+                                  >
                                 }
                               </div>
                             }
@@ -612,22 +828,33 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                               <div class="flex items-center gap-3">
                                 <div class="flex flex-wrap gap-2">
                                   @for (c of presetColors; track c) {
-                                    <button type="button" (click)="formData[field.id] = c"
+                                    <button
+                                      type="button"
+                                      (click)="formData[field.id] = c"
                                       class="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
                                       [style.background]="c"
                                       [class.border-white]="formData[field.id] === c"
-                                      [class.border-transparent]="formData[field.id] !== c">
-                                    </button>
+                                      [class.border-transparent]="formData[field.id] !== c"
+                                    ></button>
                                   }
                                 </div>
                                 <label class="relative cursor-pointer" title="Color personalizado">
-                                  <input type="color" [(ngModel)]="formData[field.id]"
-                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                  <div class="w-8 h-8 rounded-full border-2 border-dashed border-white/30 flex items-center justify-center text-white/50 text-xs"
-                                    [style.background]="formData[field.id] || 'transparent'">+</div>
+                                  <input
+                                    type="color"
+                                    [(ngModel)]="formData[field.id]"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <div
+                                    class="w-8 h-8 rounded-full border-2 border-dashed border-white/30 flex items-center justify-center text-white/50 text-xs"
+                                    [style.background]="formData[field.id] || 'transparent'"
+                                  >
+                                    +
+                                  </div>
                                 </label>
                                 @if (formData[field.id]) {
-                                  <span class="text-xs font-mono text-white/50">{{ formData[field.id] }}</span>
+                                  <span class="text-xs font-mono text-white/50">{{
+                                    formData[field.id]
+                                  }}</span>
                                 }
                               </div>
                             }
@@ -646,7 +873,9 @@ import { HttpClient } from '@angular/common/http'; // ◄ Asegura esta importaci
                   </div>
                 }
                 @if (errorMsg) {
-                  <div class="mt-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+                  <div
+                    class="mt-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm"
+                  >
                     ⚠️ {{ errorMsg }}
                   </div>
                 }
@@ -691,8 +920,16 @@ export class WorklistComponent implements OnInit {
   hoverRating: { [fieldId: string]: number } = {};
 
   readonly presetColors = [
-    '#ef4444','#f97316','#eab308','#22c55e','#06b6d4',
-    '#6366f1','#8b5cf6','#ec4899','#ffffff','#64748b'
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#22c55e',
+    '#06b6d4',
+    '#6366f1',
+    '#8b5cf6',
+    '#ec4899',
+    '#ffffff',
+    '#64748b',
   ];
 
   modalOpen: boolean = false;
@@ -714,7 +951,9 @@ export class WorklistComponent implements OnInit {
         this.selectedItem.formData = [];
       }
       const existing = this.selectedItem.formData.find(
-        (fd: any) => (fd.fieldId || fd.id || fd._id || '').toString().trim() === event.fieldId.toString().trim()
+        (fd: any) =>
+          (fd.fieldId || fd.id || fd._id || '').toString().trim() ===
+          event.fieldId.toString().trim(),
       );
       if (existing) {
         existing.value = event.fileName;
@@ -841,7 +1080,7 @@ export class WorklistComponent implements OnInit {
           }
         });
       },
-      error: (err) => console.error('Error bandeja: - worklist.component.ts:548', err),
+      error: (err) => console.error('Error bandeja: - worklist.component.ts:1083', err),
     });
   }
 
@@ -876,12 +1115,22 @@ export class WorklistComponent implements OnInit {
           const tramiteFormData = Array.isArray(item.formData) ? item.formData : [];
           this.formFields.forEach((f: any) => {
             const existingVal = tramiteFormData.find(
-              (fd: any) => (fd.fieldId || fd.id || fd._id || '').toString().trim() === (f.id || '').toString().trim()
+              (fd: any) =>
+                (fd.fieldId || fd.id || fd._id || '').toString().trim() ===
+                (f.id || '').toString().trim(),
             );
             if (f.type === 'grid') {
-              this.formData[f.id] = existingVal ? existingVal.value : (f.defaultValue ? [...f.defaultValue] : []);
+              this.formData[f.id] = existingVal
+                ? existingVal.value
+                : f.defaultValue
+                  ? [...f.defaultValue]
+                  : [];
             } else if (f.type === 'checklist') {
-              this.formData[f.id] = existingVal ? existingVal.value : (f.defaultValue ? [...f.defaultValue] : []);
+              this.formData[f.id] = existingVal
+                ? existingVal.value
+                : f.defaultValue
+                  ? [...f.defaultValue]
+                  : [];
             } else {
               this.formData[f.id] = existingVal ? existingVal.value : (f.defaultValue ?? '');
             }
@@ -898,7 +1147,8 @@ export class WorklistComponent implements OnInit {
               const fieldId = (f.id || f._id || '').toString().trim();
               if (f.type === 'file' && fieldId) {
                 const hasUploadedFile = tramiteFormData.some(
-                  (fd: any) => (fd.fieldId || fd.id || fd._id || '').toString().trim() === fieldId && fd.value
+                  (fd: any) =>
+                    (fd.fieldId || fd.id || fd._id || '').toString().trim() === fieldId && fd.value,
                 );
                 permMap[fieldId] = hasUploadedFile ? 'READ' : 'NONE';
                 labelMap[fieldId] = f.label || 'Documento';
@@ -936,9 +1186,7 @@ export class WorklistComponent implements OnInit {
 
           // 4. Determinar si se debe mostrar el panel de documentos (solo si el nodo actual tiene campos file con permisos activos)
           const currentFileFields = this.formFields.filter((f: any) => f.type === 'file');
-          this.hasDocsPane = currentFileFields.some(
-            (f: any) => f.permission !== 'NONE'
-          );
+          this.hasDocsPane = currentFileFields.some((f: any) => f.permission !== 'NONE');
 
           this.loadingForm = false;
         },
@@ -981,8 +1229,7 @@ export class WorklistComponent implements OnInit {
 
     // 3. Petición POST directa al túnel intermedio del backend
     // Si manejas una variable de entorno como environment.coreUrl, úsala aquí.
-    const targetUrl = `http://localhost:8080/api/storage/upload/${clientId}`;
-
+    const targetUrl = `${environment.coreUrl}/api/storage/upload/${clientId}`;
     this.http.post<any>(targetUrl, uploadData).subscribe({
       next: (res) => {
         // Guardamos el nombre limpio en el payload para persistencia en MongoDB
@@ -993,7 +1240,7 @@ export class WorklistComponent implements OnInit {
         alert(`¡Archivo "${cleanName}" procesado y respaldado con éxito en el expediente digital!`);
       },
       error: (err) => {
-        console.error('Error en el bypass de subida: - worklist.component.ts:630', err);
+        console.error('Error en el bypass de subida: - worklist.component.ts:1243', err);
         this.formData[fieldId] = '';
         this.completing = false;
         this.errorMsg = 'Error en la pasarela de subida intermedia del servidor core.';
@@ -1086,4 +1333,3 @@ export class WorklistComponent implements OnInit {
     this.formData[fieldId] = (event.target as HTMLElement).innerHTML;
   }
 }
-
