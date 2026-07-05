@@ -1229,7 +1229,7 @@ export class WorklistComponent implements OnInit {
 
     // 3. Petición POST directa al túnel intermedio del backend
     // Si manejas una variable de entorno como environment.coreUrl, úsala aquí.
-    const targetUrl = `${environment.coreUrl}/api/storage/upload/${clientId}`;
+    const targetUrl = `${environment.coreUrl}/storage/upload/${clientId}`;
     this.http.post<any>(targetUrl, uploadData).subscribe({
       next: (res) => {
         // Guardamos el nombre limpio en el payload para persistencia en MongoDB
